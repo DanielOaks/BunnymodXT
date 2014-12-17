@@ -338,6 +338,9 @@ void ServerDLL::RegisterCVarsAndCommands()
 	if (ORIG_PM_PlayerMove)
 		pEngfuncs->pfnCVarRegister(_bxt_taslog.GetPointer());
 
+	pEngfuncs->pfnCVarRegister(_bxt_msec.GetPointer());
+	pEngfuncs->pfnCVarRegister(_bxt_lockva.GetPointer());
+
 	EngineDevMsg("[server dll] Registered CVars.\n");
 }
 
@@ -408,7 +411,7 @@ void __cdecl ServerDLL::HOOKED_PM_PlayerMove_Func(qboolean server)
 	if (_bxt_taslog.GetBool())
 	{
 		ALERT(at_console, "-- BXT TAS Log Start: Server --\n");
-		ALERT(at_console, "Player index: %d; frametime: %f\n", playerIndex, *reinterpret_cast<float*>(pmove + 0x10));
+		ALERT(at_console, "Player index: %d; msec: %u\n", playerIndex, reinterpret_cast<usercmd_s*>(pmove + 0x45458)->msec);
 		ALERT(at_console, "Velocity: %.8f; %.8f; %.8f; origin: %.8f; %.8f; %.8f\n",velocity[0], velocity[1], velocity[2], origin[0], origin[1], origin[2]);
 	}
 
@@ -436,7 +439,6 @@ void __stdcall ServerDLL::HOOKED_GiveFnptrsToDll_Func(enginefuncs_t* pEngfuncsFr
 edict_t* __cdecl ServerDLL::HOOKED_CmdStart_Func(const edict_t* player, const usercmd_s* cmd, int random_seed)
 {
 	#define ALERT(at, format, ...) pEngfuncs->pfnAlertMessage(at, const_cast<char*>(format), ##__VA_ARGS__)
-
 	if (_bxt_taslog.GetBool())
 	{
 		ALERT(at_console, "-- CmdStart Start --\n");
@@ -445,8 +447,25 @@ edict_t* __cdecl ServerDLL::HOOKED_CmdStart_Func(const edict_t* player, const us
 		ALERT(at_console, "Buttons: %hu\n", cmd->buttons);
 		ALERT(at_console, "-- CmdStart End --\n");
 	}
-
 	#undef ALERT
+
+	int msec = _bxt_msec.GetInt();
+	if (msec != -1)
+		const_cast<usercmd_s*>(cmd)->msec = msec;
+
+	static vec3_t va = { 0, 0, 0 };
+	if (_bxt_lockva.GetBool())
+	{
+		const_cast<usercmd_s*>(cmd)->viewangles[0] = va[0];
+		const_cast<usercmd_s*>(cmd)->viewangles[1] = va[1];
+		const_cast<usercmd_s*>(cmd)->viewangles[2] = va[2];
+	}
+	else
+	{
+		// va[0] = cmd->viewangles[0];
+		// va[1] = cmd->viewangles[1];
+		// va[2] = cmd->viewangles[2];
+	}
 
 	return ORIG_CmdStart(player, cmd, random_seed);
 }

@@ -43,6 +43,8 @@ inline int CVarWrapper::GetInt() const
 extern const CVarWrapper bxt_autojump;
 extern const CVarWrapper bxt_bhopcap;
 extern const CVarWrapper _bxt_taslog;
+extern const CVarWrapper _bxt_msec;
+extern const CVarWrapper _bxt_lockva;
 
 // Clientside CVars
 extern CVarWrapper con_color_;
