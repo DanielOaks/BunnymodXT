@@ -660,6 +660,9 @@ void __cdecl ClientDLL::HOOKED_V_CalcRefdef_Func(ref_params_t* pparams)
 {
 	CustomHud::UpdatePlayerInfoInaccurate(pparams->simvel, pparams->simorg);
 
+	if (_bxt_taslog.GetBool())
+		EngineDevMsg("V_CalcRefdef. Simvel: %.8f %.8f %.8f; simorg: %.8f %.8f %.8f\n", pparams->simvel[0], pparams->simvel[1], pparams->simvel[2], pparams->simorg[0], pparams->simorg[1], pparams->simorg[2]);
+
 	ORIG_V_CalcRefdef(pparams);
 }
 
