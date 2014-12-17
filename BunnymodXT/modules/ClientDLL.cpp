@@ -596,7 +596,30 @@ void __cdecl ClientDLL::HOOKED_PM_Jump_Func()
 
 void __cdecl ClientDLL::HOOKED_PM_PlayerMove_Func(qboolean server)
 {
+	auto pmove = reinterpret_cast<uintptr_t>(*ppmove);
+
+	int playerIndex = *reinterpret_cast<int*>(pmove + 0);
+
+	float *velocity, *origin, *angles;
+	velocity = reinterpret_cast<float*>(pmove + 92);
+	origin =   reinterpret_cast<float*>(pmove + 56);
+	angles =   reinterpret_cast<float*>(pmove + 68);
+
+	if (_bxt_taslog.GetBool())
+	{
+		pEngfuncs->Con_Printf("-- BXT TAS Log Start: Client --\n");
+		pEngfuncs->Con_Printf("Player index: %d; frametime: %f\n", playerIndex, *reinterpret_cast<float*>(pmove + 0x10));
+		pEngfuncs->Con_Printf("Velocity: %.8f; %.8f; %.8f; origin: %.8f; %.8f; %.8f\n",velocity[0], velocity[1], velocity[2], origin[0], origin[1], origin[2]);
+	}
+
 	ORIG_PM_PlayerMove(server);
+
+	if (_bxt_taslog.GetBool())
+	{
+		pEngfuncs->Con_Printf("Angles: %.8f; %.8f; %.8f\n", angles[0], angles[1], angles[2]);
+		pEngfuncs->Con_Printf("New velocity: %.8f; %.8f; %.8f; new origin: %.8f; %.8f; %.8f\n", velocity[0], velocity[1], velocity[2], origin[0], origin[1], origin[2]);
+		pEngfuncs->Con_Printf("-- BXT TAS Log End --\n");
+	}
 }
 
 void __cdecl ClientDLL::HOOKED_PM_PreventMegaBunnyJumping_Func()
@@ -661,7 +684,7 @@ void __cdecl ClientDLL::HOOKED_V_CalcRefdef_Func(ref_params_t* pparams)
 	CustomHud::UpdatePlayerInfoInaccurate(pparams->simvel, pparams->simorg);
 
 	if (_bxt_taslog.GetBool())
-		EngineDevMsg("V_CalcRefdef. Simvel: %.8f %.8f %.8f; simorg: %.8f %.8f %.8f\n", pparams->simvel[0], pparams->simvel[1], pparams->simvel[2], pparams->simorg[0], pparams->simorg[1], pparams->simorg[2]);
+		pEngfuncs->Con_Printf("V_CalcRefdef. Simvel: %.8f %.8f %.8f; simorg: %.8f %.8f %.8f\n", pparams->simvel[0], pparams->simvel[1], pparams->simvel[2], pparams->simorg[0], pparams->simorg[1], pparams->simorg[2]);
 
 	ORIG_V_CalcRefdef(pparams);
 }

@@ -27,6 +27,19 @@ void __stdcall ServerDLL::HOOKED_GiveFnptrsToDll(enginefuncs_t* pEngfuncsFromEng
 	return serverDLL.HOOKED_GiveFnptrsToDll_Func(pEngfuncsFromEngine, pGlobals);
 }
 
+edict_t* __cdecl ServerDLL::HOOKED_CmdStart(const edict_t* player, const usercmd_s* cmd, int random_seed)
+{
+	return serverDLL.HOOKED_CmdStart_Func(player, cmd, random_seed);
+}
+
+// Linux hooks.
+#ifndef _WIN32
+extern "C" edict_t* __cdecl _Z8CmdStartPK7edict_sPK9usercmd_sj(const edict_t* player, const usercmd_s* cmd, int random_seed)
+{
+	return ServerDLL::HOOKED_CmdStart(player, cmd, random_seed);
+}
+#endif
+
 void ServerDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* moduleBase, size_t moduleLength, bool needToIntercept)
 {
 	Clear(); // Just in case.
@@ -222,6 +235,16 @@ void ServerDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* m
 		}
 	}
 
+	ORIG_CmdStart = reinterpret_cast<_CmdStart>(MemUtils::GetSymbolAddress(moduleHandle, "_Z8CmdStartPK7edict_sPK9usercmd_sj"));
+	if (ORIG_CmdStart)
+	{
+		EngineDevMsg("[server dll] CmdStart is located at %p.\n", ORIG_CmdStart);
+	}
+	else
+	{
+		EngineDevWarning("[server dll] Couldn't get the address of CmdStart!\n");
+	}
+
 	MemUtils::AddSymbolLookupHook(moduleHandle, reinterpret_cast<void*>(ORIG_GiveFnptrsToDll), reinterpret_cast<void*>(HOOKED_GiveFnptrsToDll));
 
 	if (needToIntercept)
@@ -229,7 +252,8 @@ void ServerDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* m
 			{ reinterpret_cast<void**>(&ORIG_PM_Jump), reinterpret_cast<void*>(HOOKED_PM_Jump) },
 			{ reinterpret_cast<void**>(&ORIG_PM_PreventMegaBunnyJumping), reinterpret_cast<void*>(HOOKED_PM_PreventMegaBunnyJumping) },
 			{ reinterpret_cast<void**>(&ORIG_PM_PlayerMove), reinterpret_cast<void*>(HOOKED_PM_PlayerMove) },
-			{ reinterpret_cast<void**>(&ORIG_GiveFnptrsToDll), reinterpret_cast<void*>(HOOKED_GiveFnptrsToDll) }
+			{ reinterpret_cast<void**>(&ORIG_GiveFnptrsToDll), reinterpret_cast<void*>(HOOKED_GiveFnptrsToDll) },
+			{ reinterpret_cast<void**>(&ORIG_CmdStart), reinterpret_cast<void*>(HOOKED_CmdStart) }
 		});
 }
 
@@ -240,7 +264,8 @@ void ServerDLL::Unhook()
 			{ reinterpret_cast<void**>(&ORIG_PM_Jump), reinterpret_cast<void*>(HOOKED_PM_Jump) },
 			{ reinterpret_cast<void**>(&ORIG_PM_PreventMegaBunnyJumping), reinterpret_cast<void*>(HOOKED_PM_PreventMegaBunnyJumping) },
 			{ reinterpret_cast<void**>(&ORIG_PM_PlayerMove), reinterpret_cast<void*>(HOOKED_PM_PlayerMove) },
-			{ reinterpret_cast<void**>(&ORIG_GiveFnptrsToDll), reinterpret_cast<void*>(HOOKED_GiveFnptrsToDll) }
+			{ reinterpret_cast<void**>(&ORIG_GiveFnptrsToDll), reinterpret_cast<void*>(HOOKED_GiveFnptrsToDll) },
+			{ reinterpret_cast<void**>(&ORIG_CmdStart), reinterpret_cast<void*>(HOOKED_CmdStart) }
 		});
 
 	MemUtils::RemoveSymbolLookupHook(m_Handle, reinterpret_cast<void*>(ORIG_GiveFnptrsToDll));
@@ -255,6 +280,7 @@ void ServerDLL::Clear()
 	ORIG_PM_PreventMegaBunnyJumping = nullptr;
 	ORIG_PM_PlayerMove = nullptr;
 	ORIG_GiveFnptrsToDll = nullptr;
+	ORIG_CmdStart = nullptr;
 	ppmove = nullptr;
 	offPlayerIndex = 0;
 	offOldbuttons = 0;
@@ -381,8 +407,8 @@ void __cdecl ServerDLL::HOOKED_PM_PlayerMove_Func(qboolean server)
 
 	if (_bxt_taslog.GetBool())
 	{
-		ALERT(at_console, "-- BXT TAS Log Start --\n");
-		ALERT(at_console, "Player index: %d\n", playerIndex);
+		ALERT(at_console, "-- BXT TAS Log Start: Server --\n");
+		ALERT(at_console, "Player index: %d; frametime: %f\n", playerIndex, *reinterpret_cast<float*>(pmove + 0x10));
 		ALERT(at_console, "Velocity: %.8f; %.8f; %.8f; origin: %.8f; %.8f; %.8f\n",velocity[0], velocity[1], velocity[2], origin[0], origin[1], origin[2]);
 	}
 
@@ -405,4 +431,22 @@ void __stdcall ServerDLL::HOOKED_GiveFnptrsToDll_Func(enginefuncs_t* pEngfuncsFr
 	ORIG_GiveFnptrsToDll(pEngfuncsFromEngine, pGlobals);
 
 	RegisterCVarsAndCommands();
+}
+
+edict_t* __cdecl ServerDLL::HOOKED_CmdStart_Func(const edict_t* player, const usercmd_s* cmd, int random_seed)
+{
+	#define ALERT(at, format, ...) pEngfuncs->pfnAlertMessage(at, const_cast<char*>(format), ##__VA_ARGS__)
+
+	if (_bxt_taslog.GetBool())
+	{
+		ALERT(at_console, "-- CmdStart Start --\n");
+		ALERT(at_console, "Lerp_msec %hd; msec %u (%Lf)\n", cmd->lerp_msec, cmd->msec, static_cast<long double>(cmd->msec) * 0.001);
+		ALERT(at_console, "Viewangles: %.8f %.8f %.8f; forwardmove: %f; sidemove: %f; upmove: %f\n", cmd->viewangles[0], cmd->viewangles[1], cmd->viewangles[2], cmd->forwardmove, cmd->sidemove, cmd->upmove);
+		ALERT(at_console, "Buttons: %hu\n", cmd->buttons);
+		ALERT(at_console, "-- CmdStart End --\n");
+	}
+
+	#undef ALERT
+
+	return ORIG_CmdStart(player, cmd, random_seed);
 }
