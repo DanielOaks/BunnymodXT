@@ -38,6 +38,11 @@ void __cdecl ClientDLL::HOOKED_HUD_Init()
 	return clientDLL.HOOKED_HUD_Init_Func();
 }
 
+void __cdecl ClientDLL::HOOKED_HUD_PostRunCmd(local_state_s* from, local_state_s* to, usercmd_s* cmd, int runfuncs, double time, unsigned int random_seed)
+{
+	return clientDLL.HOOKED_HUD_PostRunCmd_Func(from, to, cmd, runfuncs, time, random_seed);
+}
+
 #ifdef _WIN32
 void __fastcall ClientDLL::HOOKED_CHud_Init(void* thisptr, int edx)
 {
@@ -80,6 +85,11 @@ extern "C" void __cdecl _ZN4CHud7VidInitEv(void* thisptr)
 extern "C" void __cdecl V_CalcRefdef(ref_params_t* pparams)
 {
 	return ClientDLL::HOOKED_V_CalcRefdef(pparams);
+}
+
+extern "C" void __cdecl HUD_PostRunCmd(local_state_s* from, local_state_s* to, usercmd_s* cmd, int runfuncs, double time, unsigned int random_seed)
+{
+	return ClientDLL::HOOKED_HUD_PostRunCmd(from, to, cmd, runfuncs, time, random_seed);
 }
 #endif
 
@@ -446,6 +456,16 @@ void ClientDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* m
 	if (pEngfuncs && *reinterpret_cast<uintptr_t*>(pEngfuncs))
 		RegisterCVarsAndCommands();
 
+	ORIG_HUD_PostRunCmd = reinterpret_cast<_HUD_PostRunCmd>(MemUtils::GetSymbolAddress(moduleHandle, "HUD_PostRunCmd"));
+	if (ORIG_HUD_PostRunCmd)
+	{
+		EngineDevMsg("[server dll] HUD_PostRunCmd is located at %p.\n", ORIG_HUD_PostRunCmd);
+	}
+	else
+	{
+		EngineDevWarning("[server dll] Couldn't get the address of HUD_PostRunCmd!\n");
+	}
+
 	MemUtils::AddSymbolLookupHook(moduleHandle, reinterpret_cast<void*>(ORIG_Initialize), reinterpret_cast<void*>(HOOKED_Initialize));
 	MemUtils::AddSymbolLookupHook(moduleHandle, reinterpret_cast<void*>(ORIG_HUD_Init), reinterpret_cast<void*>(HOOKED_HUD_Init));
 
@@ -492,6 +512,7 @@ void ClientDLL::Clear()
 	CHud_AddHudElem = nullptr;
 	ORIG_V_CalcRefdef = nullptr;
 	ORIG_HUD_Init = nullptr;
+	ORIG_HUD_PostRunCmd = nullptr;
 	ppmove = nullptr;
 	offOldbuttons = 0;
 	offOnground = 0;
@@ -697,4 +718,19 @@ void __cdecl ClientDLL::HOOKED_HUD_Init_Func()
 		customHudWrapper_NoVD.Init();
 	else
 		customHudWrapper.Init();
+}
+
+void __cdecl ClientDLL::HOOKED_HUD_PostRunCmd_Func(local_state_s* from, local_state_s* to, usercmd_s* cmd, int runfuncs, double time, unsigned int random_seed)
+{
+	//if (_bxt_taslog.GetBool())
+	{
+		pEngfuncs->Con_Printf("-- HUD_PostRunCmd Start --\n");
+		pEngfuncs->Con_Printf("Lerp_msec %hd; msec %u (%Lf)\n", cmd->lerp_msec, cmd->msec, static_cast<long double>(cmd->msec) * 0.001);
+		pEngfuncs->Con_Printf("Viewangles: %.8f %.8f %.8f; forwardmove: %f; sidemove: %f; upmove: %f\n", cmd->viewangles[0], cmd->viewangles[1], cmd->viewangles[2], cmd->forwardmove, cmd->sidemove, cmd->upmove);
+		pEngfuncs->Con_Printf("Buttons: %hu\n", cmd->buttons);
+		pEngfuncs->Con_Printf("Random seed: %d\n", random_seed);
+		pEngfuncs->Con_Printf("-- HUD_PostRunCmd End --\n");
+	}
+
+	return ORIG_HUD_PostRunCmd(from, to, cmd, runfuncs, time, random_seed);
 }

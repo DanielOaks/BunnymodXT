@@ -93,6 +93,7 @@ static __attribute__((constructor)) void Construct()
 
 	Hooks::AddToHookedModules(&clientDLL);
 	Hooks::AddToHookedModules(&serverDLL);
+	Hooks::AddToHookedModules(&hwDLL);
 	Hooks::Init(false);
 }
 

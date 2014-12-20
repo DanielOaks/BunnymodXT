@@ -18,6 +18,7 @@ set(SOURCE_FILES
     SPTLib/sptlib.cpp
     BunnymodXT/modules/ClientDLL.cpp
     BunnymodXT/modules/ServerDLL.cpp
+    BunnymodXT/modules/HwDLL.cpp
     BunnymodXT/modules/PMSharedHooks_linux.cpp
     BunnymodXT/cvars.cpp
     BunnymodXT/hud_custom.cpp

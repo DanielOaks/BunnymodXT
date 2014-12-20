@@ -7,9 +7,10 @@
 typedef void(__cdecl *_PM_Jump) ();
 typedef void(__cdecl *_PM_PlayerMove) (qboolean);
 typedef void(__cdecl *_PM_PreventMegaBunnyJumping) ();
-typedef int(__cdecl *_Initialize) (cl_enginefunc_t* pEnginefuncs, int iVersion);
-typedef void(__cdecl *_V_CalcRefdef) (ref_params_t* pparams);
+typedef int(__cdecl *_Initialize) (cl_enginefunc_t*, int);
+typedef void(__cdecl *_V_CalcRefdef) (ref_params_t*);
 typedef void(__cdecl *_HUD_Init) ();
+typedef void(__cdecl *_HUD_PostRunCmd) (local_state_s*, local_state_s*, usercmd_s*, int, double, unsigned int);
 
 #ifdef _WIN32
 typedef void(__fastcall *_CHud_InitFunc) (void* thisptr, int edx); // For both CHud::Init and CHud::VidInit.
@@ -39,6 +40,8 @@ public:
 	void __cdecl HOOKED_V_CalcRefdef_Func(ref_params_t* pparams);
 	static void __cdecl HOOKED_HUD_Init();
 	void __cdecl HOOKED_HUD_Init_Func();
+	static void __cdecl HOOKED_HUD_PostRunCmd(local_state_s* from, local_state_s* to, usercmd_s* cmd, int runfuncs, double time, unsigned int random_seed);
+	void __cdecl HOOKED_HUD_PostRunCmd_Func(local_state_s* from, local_state_s* to, usercmd_s* cmd, int runfuncs, double time, unsigned int random_seed);
 
 	#ifdef _WIN32
 	static void __fastcall HOOKED_CHud_Init(void* thisptr, int edx);
@@ -67,6 +70,7 @@ protected:
 	_CHud_AddHudElem CHud_AddHudElem;
 	_V_CalcRefdef ORIG_V_CalcRefdef;
 	_HUD_Init ORIG_HUD_Init;
+	_HUD_PostRunCmd ORIG_HUD_PostRunCmd;
 
 	void **ppmove;
 	ptrdiff_t offOldbuttons;
