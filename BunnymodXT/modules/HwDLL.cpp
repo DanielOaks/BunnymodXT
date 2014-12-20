@@ -87,19 +87,22 @@ void __cdecl HwDLL::HOOKED_Cbuf_Execute_Func()
 {
 	static bool dontPauseNextFrame = false;
 
+	int state = *reinterpret_cast<int*>(cls);
+	int paused = *(reinterpret_cast<int*>(sv) + 1);
+
 	if (clientDLL.pEngfuncs)
-		clientDLL.pEngfuncs->Con_Printf("Cbuf_Execute() begin; cls.state: %d; sv.paused: %d\n", *reinterpret_cast<int*>(cls), *(reinterpret_cast<int*>(sv) + 1));
+		clientDLL.pEngfuncs->Con_Printf("Cbuf_Execute() begin; cls.state: %d; sv.paused: %d\n", state, paused);
 
 	// If cls.state == 4 and the game isn't paused, execute "pause" right now.
 	// This case happens when loading a savegame.
-	if (*reinterpret_cast<int*>(cls) == 4 && !*(reinterpret_cast<int*>(sv) + 1))
+	if (state == 4 && !paused)
 		ORIG_Cbuf_InsertText("pause");
 
 	ORIG_Cbuf_Execute();
 
 	// If cls.state == 3 and the game isn't paused, execute "pause" on the next cycle.
 	// This case happens when starting a map.
-	if (!dontPauseNextFrame && *reinterpret_cast<int*>(cls) == 3 && !*(reinterpret_cast<int*>(sv) + 1))
+	if (!dontPauseNextFrame && state == 3 && !paused)
 	{
 		ORIG_Cbuf_InsertText("pause");
 		dontPauseNextFrame = true;
