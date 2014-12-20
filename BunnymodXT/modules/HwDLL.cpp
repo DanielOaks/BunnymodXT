@@ -85,7 +85,7 @@ void HwDLL::Clear()
 
 void __cdecl HwDLL::HOOKED_Cbuf_Execute_Func()
 {
-	static bool dontPauseNextFrame = false;
+	static bool dontPauseNextCycle = false;
 
 	int state = *reinterpret_cast<int*>(cls);
 	int paused = *(reinterpret_cast<int*>(sv) + 1);
@@ -102,11 +102,11 @@ void __cdecl HwDLL::HOOKED_Cbuf_Execute_Func()
 
 	// If cls.state == 3 and the game isn't paused, execute "pause" on the next cycle.
 	// This case happens when starting a map.
-	if (!dontPauseNextFrame && state == 3 && !paused)
+	if (!dontPauseNextCycle && state == 3 && !paused)
 	{
 		ORIG_Cbuf_InsertText("pause");
-		dontPauseNextFrame = true;
+		dontPauseNextCycle = true;
 	}
 	else
-		dontPauseNextFrame = false;
+		dontPauseNextCycle = false;
 }
