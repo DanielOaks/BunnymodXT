@@ -91,7 +91,7 @@ void __cdecl HwDLL::HOOKED_Cbuf_Execute_Func()
 	int paused = *(reinterpret_cast<int*>(sv) + 1);
 
 	if (clientDLL.pEngfuncs)
-		clientDLL.pEngfuncs->Con_Printf("Cbuf_Execute() begin; cls.state: %d; sv.paused: %d\n", state, paused);
+		clientDLL.pEngfuncs->Con_Printf("Cbuf_Execute() begin; cls.state: %d; sv.paused: %d; time: %f\n", state, paused, *reinterpret_cast<double*>(reinterpret_cast<uintptr_t>(sv) + 0xC));
 
 	// If cls.state == 4 and the game isn't paused, execute "pause" right now.
 	// This case happens when loading a savegame.
