@@ -38,6 +38,36 @@ void HwDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* modul
 	{
 		EngineDevWarning("[hw dll] Couldn't get the address of Cbuf_Execute!\n");
 	}
+
+	ORIG_Cbuf_InsertText = reinterpret_cast<_Cbuf_InsertText>(MemUtils::GetSymbolAddress(moduleHandle, "Cbuf_InsertText"));
+	if (ORIG_Cbuf_InsertText)
+	{
+		EngineDevMsg("[hw dll] Cbuf_InsertText is located at %p.\n", ORIG_Cbuf_InsertText);
+	}
+	else
+	{
+		EngineDevWarning("[hw dll] Couldn't get the address of Cbuf_InsertText!\n");
+	}
+
+	cls = MemUtils::GetSymbolAddress(moduleHandle, "cls");
+	if (cls)
+	{
+		EngineDevMsg("[hw dll] Cls is located at %p.\n", cls);
+	}
+	else
+	{
+		EngineDevWarning("[hw dll] Couldn't get the address of cls!\n");
+	}
+
+	sv = MemUtils::GetSymbolAddress(moduleHandle, "sv");
+	if (sv)
+	{
+		EngineDevMsg("[hw dll] Sv is located at %p.\n", sv);
+	}
+	else
+	{
+		EngineDevWarning("[hw dll] Couldn't get the address of sv!\n");
+	}
 }
 
 void HwDLL::Unhook()
@@ -48,12 +78,32 @@ void HwDLL::Unhook()
 void HwDLL::Clear()
 {
 	ORIG_Cbuf_Execute = nullptr;
+	ORIG_Cbuf_InsertText = nullptr;
+	cls = nullptr;
+	sv = nullptr;
 }
 
 void __cdecl HwDLL::HOOKED_Cbuf_Execute_Func()
 {
-	if (clientDLL.pEngfuncs)
-		clientDLL.pEngfuncs->Con_Printf("Cbuf_Execute();\n");
+	static bool dontPauseNextFrame = false;
 
-	return ORIG_Cbuf_Execute();
+	if (clientDLL.pEngfuncs)
+		clientDLL.pEngfuncs->Con_Printf("Cbuf_Execute() begin; cls.state: %d; sv.paused: %d\n", *reinterpret_cast<int*>(cls), *(reinterpret_cast<int*>(sv) + 1));
+
+	// If cls.state == 4 and the game isn't paused, execute "pause" right now.
+	// This case happens when loading a savegame.
+	if (*reinterpret_cast<int*>(cls) == 4 && !*(reinterpret_cast<int*>(sv) + 1))
+		ORIG_Cbuf_InsertText("pause");
+
+	ORIG_Cbuf_Execute();
+
+	// If cls.state == 3 and the game isn't paused, execute "pause" on the next cycle.
+	// This case happens when starting a map.
+	if (!dontPauseNextFrame && *reinterpret_cast<int*>(cls) == 3 && !*(reinterpret_cast<int*>(sv) + 1))
+	{
+		ORIG_Cbuf_InsertText("pause");
+		dontPauseNextFrame = true;
+	}
+	else
+		dontPauseNextFrame = false;
 }

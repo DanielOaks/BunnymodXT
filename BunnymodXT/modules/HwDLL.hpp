@@ -4,6 +4,7 @@
 #include <SPTLib/IHookableNameFilter.hpp>
 
 typedef void(__cdecl *_Cbuf_Execute) ();
+typedef void(__cdecl *_Cbuf_InsertText) (char*);
 
 class HwDLL : public IHookableNameFilter
 {
@@ -18,4 +19,8 @@ public:
 
 protected:
 	_Cbuf_Execute ORIG_Cbuf_Execute;
+	_Cbuf_InsertText ORIG_Cbuf_InsertText;
+
+	void *cls;
+	void *sv;
 };
