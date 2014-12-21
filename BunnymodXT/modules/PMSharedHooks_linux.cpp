@@ -28,3 +28,8 @@ extern "C" void __cdecl PM_Jump()
 	else
 		return ClientDLL::HOOKED_PM_Jump();
 }
+
+extern "C" float __cdecl _Z22UTIL_SharedRandomFloatjff(unsigned int seed, float low, float high)
+{
+	return ServerDLL::HOOKED_UTIL_SharedRandomFloat(seed, low, high);
+}

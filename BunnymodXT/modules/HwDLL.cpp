@@ -96,7 +96,10 @@ void __cdecl HwDLL::HOOKED_Cbuf_Execute_Func()
 	// If cls.state == 4 and the game isn't paused, execute "pause" right now.
 	// This case happens when loading a savegame.
 	if (state == 4 && !paused)
-		ORIG_Cbuf_InsertText("pause");
+		ORIG_Cbuf_InsertText("pause\n");
+
+	if (state == 5 && paused)
+		ORIG_Cbuf_InsertText("+attack\n");
 
 	ORIG_Cbuf_Execute();
 
@@ -104,7 +107,7 @@ void __cdecl HwDLL::HOOKED_Cbuf_Execute_Func()
 	// This case happens when starting a map.
 	if (!dontPauseNextCycle && state == 3 && !paused)
 	{
-		ORIG_Cbuf_InsertText("pause");
+		ORIG_Cbuf_InsertText("pause\n");
 		dontPauseNextCycle = true;
 	}
 	else

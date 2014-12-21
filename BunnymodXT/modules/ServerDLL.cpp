@@ -32,6 +32,11 @@ edict_t* __cdecl ServerDLL::HOOKED_CmdStart(const edict_t* player, const usercmd
 	return serverDLL.HOOKED_CmdStart_Func(player, cmd, random_seed);
 }
 
+float __cdecl ServerDLL::HOOKED_UTIL_SharedRandomFloat(unsigned int seed, float low, float high)
+{
+	return serverDLL.HOOKED_UTIL_SharedRandomFloat_Func(seed, low, high);
+}
+
 // Linux hooks.
 #ifndef _WIN32
 extern "C" edict_t* __cdecl _Z8CmdStartPK7edict_sPK9usercmd_sj(const edict_t* player, const usercmd_s* cmd, int random_seed)
@@ -245,6 +250,16 @@ void ServerDLL::Hook(const std::wstring& moduleName, void* moduleHandle, void* m
 		EngineDevWarning("[server dll] Couldn't get the address of CmdStart!\n");
 	}
 
+	ORIG_UTIL_SharedRandomFloat = reinterpret_cast<_UTIL_SharedRandomFloat>(MemUtils::GetSymbolAddress(moduleHandle, "_Z22UTIL_SharedRandomFloatjff"));
+	if (ORIG_UTIL_SharedRandomFloat)
+	{
+		EngineDevMsg("[server dll] UTIL_SharedRandomFloat is located at %p.\n", ORIG_UTIL_SharedRandomFloat);
+	}
+	else
+	{
+		EngineDevWarning("[server dll] Couldn't get the address of UTIL_SharedRandomFloat!\n");
+	}
+
 	MemUtils::AddSymbolLookupHook(moduleHandle, reinterpret_cast<void*>(ORIG_GiveFnptrsToDll), reinterpret_cast<void*>(HOOKED_GiveFnptrsToDll));
 
 	if (needToIntercept)
@@ -281,6 +296,7 @@ void ServerDLL::Clear()
 	ORIG_PM_PlayerMove = nullptr;
 	ORIG_GiveFnptrsToDll = nullptr;
 	ORIG_CmdStart = nullptr;
+	ORIG_UTIL_SharedRandomFloat = nullptr;
 	ppmove = nullptr;
 	offPlayerIndex = 0;
 	offOldbuttons = 0;
@@ -438,7 +454,8 @@ void __stdcall ServerDLL::HOOKED_GiveFnptrsToDll_Func(enginefuncs_t* pEngfuncsFr
 
 edict_t* __cdecl ServerDLL::HOOKED_CmdStart_Func(const edict_t* player, const usercmd_s* cmd, int random_seed)
 {
-	#define ALERT(at, format, ...) pEngfuncs->pfnAlertMessage(at, const_cast<char*>(format), ##__VA_ARGS__)
+	// #define ALERT(at, format, ...) pEngfuncs->pfnAlertMessage(at, const_cast<char*>(format), ##__VA_ARGS__)
+	#define ALERT(at, format, ...) EngineDevMsg(format, ##__VA_ARGS__)
 	//if (_bxt_taslog.GetBool())
 	{
 		ALERT(at_console, "-- CmdStart Start --\n");
@@ -451,4 +468,14 @@ edict_t* __cdecl ServerDLL::HOOKED_CmdStart_Func(const edict_t* player, const us
 	#undef ALERT
 
 	return ORIG_CmdStart(player, cmd, random_seed);
+}
+
+float __cdecl ServerDLL::HOOKED_UTIL_SharedRandomFloat_Func(unsigned int seed, float low, float high)
+{
+	auto res = ORIG_UTIL_SharedRandomFloat(seed, low, high);
+	#define ALERT(at, format, ...) pEngfuncs->pfnAlertMessage(at, const_cast<char*>(format), ##__VA_ARGS__)
+	ALERT(at_console, "UTIL_SharedRandomFloat(%u, %f, %f) => %f\n", seed, low, high, res);
+	#undef ALERT
+	EngineDevMsg("UTIL_SharedRandomFloat(%u, %f, %f) => %f\n", seed, low, high, res);
+	return res;
 }

@@ -724,12 +724,12 @@ void __cdecl ClientDLL::HOOKED_HUD_PostRunCmd_Func(local_state_s* from, local_st
 {
 	//if (_bxt_taslog.GetBool())
 	{
-		pEngfuncs->Con_Printf("-- HUD_PostRunCmd Start --\n");
-		pEngfuncs->Con_Printf("Lerp_msec %hd; msec %u (%Lf)\n", cmd->lerp_msec, cmd->msec, static_cast<long double>(cmd->msec) * 0.001);
-		pEngfuncs->Con_Printf("Viewangles: %.8f %.8f %.8f; forwardmove: %f; sidemove: %f; upmove: %f\n", cmd->viewangles[0], cmd->viewangles[1], cmd->viewangles[2], cmd->forwardmove, cmd->sidemove, cmd->upmove);
-		pEngfuncs->Con_Printf("Buttons: %hu\n", cmd->buttons);
-		pEngfuncs->Con_Printf("Random seed: %d\n", random_seed);
-		pEngfuncs->Con_Printf("-- HUD_PostRunCmd End --\n");
+		EngineDevMsg("-- HUD_PostRunCmd Start --\n");
+		EngineDevMsg("Lerp_msec %hd; msec %u (%Lf)\n", cmd->lerp_msec, cmd->msec, static_cast<long double>(cmd->msec) * 0.001);
+		EngineDevMsg("Viewangles: %.8f %.8f %.8f; forwardmove: %f; sidemove: %f; upmove: %f\n", cmd->viewangles[0], cmd->viewangles[1], cmd->viewangles[2], cmd->forwardmove, cmd->sidemove, cmd->upmove);
+		EngineDevMsg("Buttons: %hu\n", cmd->buttons);
+		EngineDevMsg("Random seed: %d\n", random_seed);
+		EngineDevMsg("-- HUD_PostRunCmd End --\n");
 	}
 
 	return ORIG_HUD_PostRunCmd(from, to, cmd, runfuncs, time, random_seed);
