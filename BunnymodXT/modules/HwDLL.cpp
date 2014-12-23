@@ -98,8 +98,8 @@ void __cdecl HwDLL::HOOKED_Cbuf_Execute_Func()
 	if (state == 4 && !paused)
 		ORIG_Cbuf_InsertText("pause\n");
 
-	if (state == 5 && paused)
-		ORIG_Cbuf_InsertText("+attack\n");
+	// if (state == 5 && paused)
+	// 	ORIG_Cbuf_InsertText("+attack\n");
 
 	ORIG_Cbuf_Execute();
 

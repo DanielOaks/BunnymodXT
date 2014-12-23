@@ -454,8 +454,8 @@ void __stdcall ServerDLL::HOOKED_GiveFnptrsToDll_Func(enginefuncs_t* pEngfuncsFr
 
 edict_t* __cdecl ServerDLL::HOOKED_CmdStart_Func(const edict_t* player, const usercmd_s* cmd, int random_seed)
 {
-	// #define ALERT(at, format, ...) pEngfuncs->pfnAlertMessage(at, const_cast<char*>(format), ##__VA_ARGS__)
-	#define ALERT(at, format, ...) EngineDevMsg(format, ##__VA_ARGS__)
+	#define ALERT(at, format, ...) pEngfuncs->pfnAlertMessage(at, const_cast<char*>(format), ##__VA_ARGS__)
+	//#define ALERT(at, format, ...) EngineDevMsg(format, ##__VA_ARGS__)
 	//if (_bxt_taslog.GetBool())
 	{
 		ALERT(at_console, "-- CmdStart Start --\n");
@@ -476,6 +476,6 @@ float __cdecl ServerDLL::HOOKED_UTIL_SharedRandomFloat_Func(unsigned int seed, f
 	#define ALERT(at, format, ...) pEngfuncs->pfnAlertMessage(at, const_cast<char*>(format), ##__VA_ARGS__)
 	ALERT(at_console, "UTIL_SharedRandomFloat(%u, %f, %f) => %f\n", seed, low, high, res);
 	#undef ALERT
-	EngineDevMsg("UTIL_SharedRandomFloat(%u, %f, %f) => %f\n", seed, low, high, res);
+	//EngineDevMsg("UTIL_SharedRandomFloat(%u, %f, %f) => %f\n", seed, low, high, res);
 	return res;
 }
